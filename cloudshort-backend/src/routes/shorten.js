@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
-const { generateShortId, ALPHABET } = require('../utils/shortid');
+const { generateShortId } = require('../utils/shortid');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -28,8 +28,28 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // 🔹 Call ML service to check URL
+    const mlResponse = await fetch(`${process.env.ML_SERVICE_URL}/check_url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const mlResult = await mlResponse.json();
+
+    // Optional: block suspicious URLs
+    if (mlResult.is_suspicious) {
+      return res.status(400).json({ error: "URL flagged as suspicious by ML service", details: mlResult });
+    }
+
+    // Insert into Supabase
     await supabase.from('urls').insert({ short, target: url });
-    return res.json({ short, redirect_url: `${process.env.BASE_URL || ''}/r/${short}` });
+
+    return res.json({ 
+      short, 
+      redirect_url: `${process.env.BASE_URL || ''}/r/${short}`, 
+      mlResult  // include ML info in response if you want
+    });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: "server error" });
