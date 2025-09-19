@@ -1,24 +1,24 @@
 const crypto = require('crypto');
 
-const ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-function base62FromBuffer(buf, length=6){
-  let n = BigInt('0x' + buf.toString('hex'));
-  const base = BigInt(ALPHABET.length);
-  let out = '';
-  while (out.length < length && n > 0) {
-    const idx = Number(n % base);
-    out += ALPHABET[idx];
-    n = n / base;
-  }
-  while (out.length < length) {
-    out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  }
-  return out.slice(0, length);
+const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+// Convert buffer to base62 string
+function base62Encode(buffer) {
+    const chars = ALPHABET.split('');
+    let num = BigInt('0x' + buffer.toString('hex'));
+    let str = '';
+    while (num > 0) {
+        str = chars[Number(num % 62n)] + str;
+        num = num / 62n;
+    }
+    return str;
 }
 
-function generateShortId(url, length=6){
-  const hash = crypto.createHash('sha256').update(url).digest();
-  return base62FromBuffer(hash, length);
+// Generate collision-resistant short ID
+function generateShortId(url, length = 6) {
+    const hash = crypto.createHash('sha256').update(url + Date.now().toString()).digest();
+    const short = base62Encode(hash).substring(0, length);
+    return short;
 }
 
 module.exports = { generateShortId, ALPHABET };
