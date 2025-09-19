@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  backend:
+    build: ./cloudshort-backend
+    container_name: cloudshort-backend
+    env_file: ./cloudshort-backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mlservice
+
+  mlservice:
+    build: ./ml-service
+    container_name: ml-service
+    ports:
+      - "8001:8001"
